@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
   View,
   Text,
@@ -17,8 +17,6 @@ type Props = {
 };
 
 export default function WelcomeScreen({ navigation }: Props) {
-  const [isDark, setIsDark] = useState(true);
-
   const [fontsLoaded] = useFonts({
     Fraunces_700Bold,
     DMSans_400Regular,
@@ -27,33 +25,14 @@ export default function WelcomeScreen({ navigation }: Props) {
 
   if (!fontsLoaded) return null;
 
-  const theme = {
-    background: isDark ? '#1a0000' : '#FAF7F2',
-    title: isDark ? '#e8162a' : '#c0182b',
-    subtitle: isDark ? '#ffffff' : '#1a0000',
-    toggleIcon: isDark ? '☀️' : '🌙',
-  };
-
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
-      <StatusBar
-        barStyle={isDark ? 'light-content' : 'dark-content'}
-        backgroundColor={theme.background}
-      />
-
-      {/* Botão de tema */}
-      <TouchableOpacity
-        style={styles.themeToggle}
-        onPress={() => setIsDark(!isDark)}
-        activeOpacity={0.7}
-      >
-        <Text style={styles.themeToggleIcon}>{theme.toggleIcon}</Text>
-      </TouchableOpacity>
+    <SafeAreaView style={styles.container}>
+      <StatusBar barStyle="dark-content" backgroundColor="#FAF7F2" />
 
       {/* Logo / Título */}
       <View style={styles.logoContainer}>
-        <Text style={[styles.title, { color: theme.title }]}>NAIRA</Text>
-        <Text style={[styles.subtitle, { color: theme.subtitle }]}>Doe. Conecte. Salve</Text>
+        <Text style={styles.title}>NAIRA</Text>
+        <Text style={styles.subtitle}>Doe. Conecte. Salve</Text>
       </View>
 
       {/* Botões */}
@@ -69,7 +48,7 @@ export default function WelcomeScreen({ navigation }: Props) {
         <TouchableOpacity
           style={styles.button}
           activeOpacity={0.85}
-          onPress={() => navigation.navigate('Register')}
+          onPress={() => navigation.navigate('Quiz')}
         >
           <Text style={styles.buttonText}>Cadastrar</Text>
         </TouchableOpacity>
@@ -81,20 +60,11 @@ export default function WelcomeScreen({ navigation }: Props) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: '#FAF7F2',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingVertical: 80,
     paddingHorizontal: 32,
-  },
-  themeToggle: {
-    position: 'absolute',
-    top: 56,
-    right: 24,
-    zIndex: 10,
-    padding: 8,
-  },
-  themeToggleIcon: {
-    fontSize: 22,
   },
   logoContainer: {
     flex: 1,
@@ -104,12 +74,14 @@ const styles = StyleSheet.create({
   title: {
     fontFamily: 'Fraunces_700Bold',
     fontSize: 52,
+    color: '#C8233C',
     letterSpacing: 2,
     marginBottom: 8,
   },
   subtitle: {
     fontFamily: 'DMSans_400Regular',
     fontSize: 14,
+    color: '#1a0000',
     letterSpacing: 0.5,
     opacity: 0.9,
   },
@@ -118,7 +90,7 @@ const styles = StyleSheet.create({
     gap: 16,
   },
   button: {
-    backgroundColor: '#c0182b',
+    backgroundColor: '#C8233C',
     borderRadius: 50,
     paddingVertical: 18,
     alignItems: 'center',

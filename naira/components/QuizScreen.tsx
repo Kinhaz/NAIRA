@@ -14,25 +14,30 @@ import {
   Dimensions,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { useFonts, Fraunces_700Bold } from '@expo-google-fonts/fraunces';
+import { DMSans_400Regular, DMSans_500Medium } from '@expo-google-fonts/dm-sans';
 
 const { width } = Dimensions.get("window");
 
 const COLORS = {
-  bg: "#1a1a1a",
-  card: "#2a2a2a",
-  cardBorder: "#3a3a3a",
-  cardSelected: "#3d1a1a",
-  borderSelected: "#e8637a",
+  bg: "#FAF7F2",
+  card: "#ffffff",
+  cardBorder: "#e8e0d5",
+  cardSelected: "#fde8eb",
+  borderSelected: "#C8233C",
   red: "#c0392b",
-  pink: "#e8637a",
+  pink: "#C8233C",
   white: "#ffffff",
-  gray: "#aaaaaa",
-  grayDark: "#444444",
-  inputBg: "#222222",
+  gray: "#888888",
+  grayDark: "#d0c8be",
+  inputBg: "#f5f0ea",
+  text: "#1a0000",
 };
 
 type Question =
   | { type: "options"; text: string; options: { label: string; value: string }[] }
+  | { type: "blood_type_gate" }
+  | { type: "blood_type_unknown" }
   | { type: "form" };
 
 const QUESTIONS: Question[] = [
@@ -110,6 +115,9 @@ const QUESTIONS: Question[] = [
       { label: "Pergunte mais tarde.", value: "depois" },
     ],
   },
+  // Pergunta gate: sabe o tipo sanguíneo?
+  { type: "blood_type_gate" },
+  // Pergunta do tipo sanguíneo (só aparece se souber)
   {
     type: "options",
     text: "Qual é o seu tipo sanguíneo?",
@@ -124,10 +132,18 @@ const QUESTIONS: Question[] = [
       { label: "O-", value: "O-" },
     ],
   },
+  // Tela para quem não sabe o tipo
+  { type: "blood_type_unknown" },
   { type: "form" },
 ];
 
-const TOTAL = QUESTIONS.length;
+// índices fixos para navegação condicional
+const IDX_GATE = 8;
+const IDX_BLOOD_TYPE = 9;
+const IDX_UNKNOWN = 10;
+const IDX_FORM = 11;
+
+const TOTAL_VISIBLE = 10; // perguntas visíveis (excluindo a tela unknown)
 const OPTION_LABELS = "ABCDEFGH";
 
 export default function QuizScreen({ navigation }: { navigation?: any }) {
@@ -138,6 +154,8 @@ export default function QuizScreen({ navigation }: { navigation?: any }) {
   const [dd, setDd] = useState("");
   const [mm, setMm] = useState("");
   const [yyyy, setYyyy] = useState("");
+
+  const [fontsLoaded] = useFonts({ Fraunces_700Bold, DMSans_400Regular, DMSans_500Medium });
 
   const opacity = useRef(new Animated.Value(1)).current;
   const translateY = useRef(new Animated.Value(0)).current;
@@ -152,19 +170,22 @@ export default function QuizScreen({ navigation }: { navigation?: any }) {
   };
 
   const progressWidth = progressAnim.interpolate({
-    inputRange: [0, TOTAL],
+    inputRange: [0, TOTAL_VISIBLE],
     outputRange: ["0%", "100%"],
   });
 
-  const goNext = (nextIndex: number) => {
+  const transition = (nextIndex: number, direction: "forward" | "back" = "forward") => {
+    const outY = direction === "forward" ? 40 : -40;
+    const inY = direction === "forward" ? -40 : 40;
+
     Animated.parallel([
       Animated.timing(opacity, { toValue: 0, duration: 220, useNativeDriver: true }),
-      Animated.timing(translateY, { toValue: 40, duration: 220, useNativeDriver: true }),
+      Animated.timing(translateY, { toValue: outY, duration: 220, useNativeDriver: true }),
     ]).start(() => {
       setCurrent(nextIndex);
-      setSelected(null);
-      translateY.setValue(-40);
-      animateProgress(nextIndex);
+      setSelected(answers[nextIndex] ?? null);
+      translateY.setValue(inY);
+      animateProgress(nextIndex > IDX_UNKNOWN ? nextIndex - 1 : nextIndex);
       Animated.parallel([
         Animated.timing(opacity, { toValue: 1, duration: 250, useNativeDriver: true }),
         Animated.timing(translateY, { toValue: 0, duration: 250, useNativeDriver: true }),
@@ -175,7 +196,20 @@ export default function QuizScreen({ navigation }: { navigation?: any }) {
   const handleOptionSelect = (value: string) => {
     setSelected(value);
     setAnswers((prev) => ({ ...prev, [current]: value }));
-    setTimeout(() => goNext(current + 1), 350);
+    setTimeout(() => transition(current + 1, "forward"), 350);
+  };
+
+  const handleBloodTypeGate = (knowsType: boolean) => {
+    const value = knowsType ? "sim" : "nao";
+    setSelected(value);
+    setAnswers((prev) => ({ ...prev, [IDX_GATE]: value }));
+    setTimeout(() => {
+      if (knowsType) {
+        transition(IDX_BLOOD_TYPE, "forward");
+      } else {
+        transition(IDX_UNKNOWN, "forward");
+      }
+    }, 350);
   };
 
   const handleBack = () => {
@@ -183,20 +217,17 @@ export default function QuizScreen({ navigation }: { navigation?: any }) {
       navigation?.goBack?.();
       return;
     }
-    Animated.parallel([
-      Animated.timing(opacity, { toValue: 0, duration: 200, useNativeDriver: true }),
-      Animated.timing(translateY, { toValue: -40, duration: 200, useNativeDriver: true }),
-    ]).start(() => {
-      const prev = current - 1;
-      setCurrent(prev);
-      setSelected(answers[prev] ?? null);
-      translateY.setValue(40);
-      animateProgress(prev);
-      Animated.parallel([
-        Animated.timing(opacity, { toValue: 1, duration: 230, useNativeDriver: true }),
-        Animated.timing(translateY, { toValue: 0, duration: 230, useNativeDriver: true }),
-      ]).start();
-    });
+
+    let prev = current - 1;
+
+    // Se estiver na tela unknown, volta para o gate
+    if (current === IDX_UNKNOWN) prev = IDX_GATE;
+    // Se estiver no form e veio do unknown (não sabe tipo), volta pro unknown
+    if (current === IDX_FORM && answers[IDX_GATE] === "nao") prev = IDX_UNKNOWN;
+    // Se estiver no form e veio do blood_type, volta pro blood_type
+    if (current === IDX_FORM && answers[IDX_GATE] === "sim") prev = IDX_BLOOD_TYPE;
+
+    transition(prev, "back");
   };
 
   const handleFinalizar = () => {
@@ -204,17 +235,22 @@ export default function QuizScreen({ navigation }: { navigation?: any }) {
     if (dd.length < 2 || mm.length < 2 || yyyy.length < 4) {
       Alert.alert("Atenção", "Preencha a data de nascimento completa."); return;
     }
-    Alert.alert("Concluído!", `Obrigado, ${nome}! Seu cadastro foi finalizado.`);
+    navigation?.navigate("Register");
   };
 
+  if (!fontsLoaded) return null;
+
   const q = QUESTIONS[current];
+
+  // Número da pergunta visível (unknown não conta)
+  const visibleStep = current >= IDX_UNKNOWN ? current - 1 : current;
 
   return (
     <KeyboardAvoidingView
       style={styles.container}
       behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
-      <StatusBar barStyle="light-content" backgroundColor={COLORS.bg} />
+      <StatusBar barStyle="dark-content" backgroundColor={COLORS.bg} />
 
       <View style={styles.topBar}>
         <TouchableOpacity onPress={handleBack} style={styles.backBtn}>
@@ -225,18 +261,17 @@ export default function QuizScreen({ navigation }: { navigation?: any }) {
         </View>
       </View>
 
-      <Text style={styles.stepLabel}>
-        Pergunta {current + 1} de {TOTAL}
-      </Text>
+      {q.type !== "blood_type_unknown" && (
+        <Text style={styles.stepLabel}>
+          Pergunta {visibleStep + 1} de {TOTAL_VISIBLE}
+        </Text>
+      )}
 
-      <Animated.View
-        style={[styles.animatedArea, { opacity, transform: [{ translateY }] }]}
-      >
-        {q.type === "options" ? (
-          <ScrollView
-            contentContainerStyle={styles.scrollContent}
-            showsVerticalScrollIndicator={false}
-          >
+      <Animated.View style={[styles.animatedArea, { opacity, transform: [{ translateY }] }]}>
+
+        {/* Pergunta de opções normal */}
+        {q.type === "options" && (
+          <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
             <Text style={styles.question}>{q.text}</Text>
             <View style={styles.optionsList}>
               {q.options.map((opt, i) => {
@@ -261,11 +296,61 @@ export default function QuizScreen({ navigation }: { navigation?: any }) {
               })}
             </View>
           </ScrollView>
-        ) : (
-          <ScrollView
-            contentContainerStyle={styles.scrollContent}
-            showsVerticalScrollIndicator={false}
-          >
+        )}
+
+        {q.type === "blood_type_gate" && (
+          <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+            <Text style={styles.question}>Você sabe qual é o seu tipo sanguíneo?</Text>
+            <View style={styles.optionsList}>
+              {[
+                { label: "Sim, sei meu tipo.", value: "sim" },
+                { label: "Não sei meu tipo.", value: "nao" },
+              ].map((opt, i) => {
+                const isSelected = selected === opt.value;
+                return (
+                  <TouchableOpacity
+                    key={opt.value}
+                    style={[styles.optionBtn, isSelected && styles.optionBtnSelected]}
+                    activeOpacity={0.75}
+                    onPress={() => handleBloodTypeGate(opt.value === "sim")}
+                  >
+                    <View style={[styles.optionLabel, isSelected && styles.optionLabelSelected]}>
+                      <Text style={[styles.optionLabelText, isSelected && { color: "#fff" }]}>
+                        {OPTION_LABELS[i]}
+                      </Text>
+                    </View>
+                    <Text style={[styles.optionText, isSelected && styles.optionTextSelected]}>
+                      {opt.label}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          </ScrollView>
+        )}
+
+        {/* Tela para quem não sabe o tipo */}
+        {q.type === "blood_type_unknown" && (
+          <View style={styles.unknownContainer}>
+            <Text style={styles.unknownTitle}>
+              Sua jornada começa aqui.
+            </Text>
+            <Text style={styles.unknownText}>
+              Sua primeira doação também ajudará você a descobrir seu tipo sanguíneo.
+            </Text>
+            <TouchableOpacity
+              style={styles.finalizarBtn}
+              onPress={() => navigation?.navigate("Register")}
+              activeOpacity={0.85}
+            >
+              <Text style={styles.finalizarText}>Começar</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {/* Formulário final */}
+        {q.type === "form" && (
+          <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
             <View style={styles.formGroup}>
               <TextInput
                 style={styles.input}
@@ -315,6 +400,7 @@ export default function QuizScreen({ navigation }: { navigation?: any }) {
             </TouchableOpacity>
           </ScrollView>
         )}
+
       </Animated.View>
     </KeyboardAvoidingView>
   );
@@ -339,13 +425,19 @@ const styles = StyleSheet.create({
     overflow: "hidden",
   },
   progressFill: { height: "100%", backgroundColor: COLORS.pink, borderRadius: 10 },
-  stepLabel: { color: COLORS.gray, fontSize: 12, paddingHorizontal: 20, marginBottom: 6 },
+  stepLabel: {
+    fontFamily: "DMSans_400Regular",
+    color: COLORS.gray,
+    fontSize: 12,
+    paddingHorizontal: 20,
+    marginBottom: 6,
+  },
   animatedArea: { flex: 1 },
   scrollContent: { paddingHorizontal: 20, paddingBottom: 40, paddingTop: 8 },
   question: {
-    color: COLORS.white,
+    fontFamily: "Fraunces_700Bold",
+    color: COLORS.text,
     fontSize: 26,
-    fontWeight: "800",
     lineHeight: 34,
     marginBottom: 28,
   },
@@ -371,19 +463,44 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   optionLabelSelected: { backgroundColor: COLORS.pink },
-  optionLabelText: { color: COLORS.gray, fontSize: 11, fontWeight: "700" },
-  optionText: { color: COLORS.gray, fontSize: 15, fontWeight: "500", flex: 1 },
-  optionTextSelected: { color: COLORS.white, fontWeight: "700" },
+  optionLabelText: { fontFamily: "DMSans_500Medium", color: COLORS.gray, fontSize: 11 },
+  optionText: { fontFamily: "DMSans_400Regular", color: COLORS.gray, fontSize: 15, flex: 1 },
+  optionTextSelected: { fontFamily: "DMSans_500Medium", color: COLORS.text },
+
+  // Tela unknown
+  unknownContainer: {
+    flex: 1,
+    paddingHorizontal: 28,
+    paddingTop: 40,
+    paddingBottom: 40,
+    justifyContent: "center",
+    gap: 20,
+  },
+  unknownTitle: {
+    fontFamily: "Fraunces_700Bold",
+    color: COLORS.pink,
+    fontSize: 32,
+    lineHeight: 40,
+  },
+  unknownText: {
+    fontFamily: "DMSans_400Regular",
+    color: COLORS.text,
+    fontSize: 16,
+    lineHeight: 26,
+    opacity: 0.8,
+  },
+
   formGroup: { marginBottom: 20 },
-  inputLabel: { color: COLORS.gray, fontSize: 12, marginBottom: 8, fontWeight: "600" },
+  inputLabel: { fontFamily: "DMSans_500Medium", color: COLORS.gray, fontSize: 12, marginBottom: 8 },
   input: {
+    fontFamily: "DMSans_400Regular",
     backgroundColor: COLORS.inputBg,
     borderWidth: 1.5,
     borderColor: COLORS.cardBorder,
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 14,
-    color: COLORS.white,
+    color: COLORS.text,
     fontSize: 15,
   },
   dateRow: { flexDirection: "row", gap: 10 },
@@ -396,5 +513,5 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     alignItems: "center",
   },
-  finalizarText: { color: "#fff", fontSize: 16, fontWeight: "800" },
+  finalizarText: { fontFamily: "DMSans_500Medium", color: "#fff", fontSize: 16 },
 });

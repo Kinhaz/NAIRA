@@ -15,6 +15,7 @@ import { useFonts, Fraunces_700Bold } from '@expo-google-fonts/fraunces';
 import { DMSans_400Regular, DMSans_500Medium } from '@expo-google-fonts/dm-sans';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../src/navigation/types';
+import { Ionicons } from '@expo/vector-icons';
 
 type Props = {
   navigation: NativeStackNavigationProp<RootStackParamList, 'Login'>;
@@ -73,7 +74,13 @@ export default function LoginScreen({ navigation }: Props) {
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="#1a0000" />
+      <StatusBar barStyle="dark-content" backgroundColor="#FAF7F2" />
+
+      {/* Seta voltar */}
+      <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()} activeOpacity={0.7}>
+        <Ionicons name="arrow-back" size={22} color="#C8233C" />
+      </TouchableOpacity>
+
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.keyboardView}
@@ -87,7 +94,7 @@ export default function LoginScreen({ navigation }: Props) {
             <TextInput
               style={[styles.input, emailError ? styles.inputError : null]}
               placeholder="Insira seu e-mail"
-              placeholderTextColor="#888"
+              placeholderTextColor="#aaa"
               keyboardType="email-address"
               autoCapitalize="none"
               value={email}
@@ -102,7 +109,7 @@ export default function LoginScreen({ navigation }: Props) {
               <TextInput
                 style={[styles.input, styles.passwordInput, passwordError ? styles.inputError : null]}
                 placeholder="Insira sua senha"
-                placeholderTextColor="#888"
+                placeholderTextColor="#aaa"
                 secureTextEntry={!showPassword}
                 value={password}
                 onChangeText={validatePassword}
@@ -113,7 +120,11 @@ export default function LoginScreen({ navigation }: Props) {
                 style={styles.eyeButton}
                 activeOpacity={0.7}
               >
-                <Text style={styles.eyeIcon}>{showPassword ? '🙈' : '👁️'}</Text>
+                <Ionicons
+                  name={showPassword ? 'eye-off-outline' : 'eye-outline'}
+                  size={20}
+                  color="#aaa"
+                />
               </TouchableOpacity>
             </View>
             {passwordError ? <Text style={styles.errorText}>{passwordError}</Text> : null}
@@ -147,7 +158,13 @@ export default function LoginScreen({ navigation }: Props) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#1a0000',
+    backgroundColor: '#FAF7F2',
+  },
+  backBtn: {
+    paddingHorizontal: 20,
+    paddingTop: 12,
+    paddingBottom: 4,
+    alignSelf: 'flex-start',
   },
   keyboardView: {
     flex: 1,
@@ -155,13 +172,13 @@ const styles = StyleSheet.create({
   scroll: {
     flexGrow: 1,
     paddingHorizontal: 28,
-    paddingTop: 48,
+    paddingTop: 24,
     paddingBottom: 40,
   },
   title: {
     fontFamily: 'Fraunces_700Bold',
     fontSize: 28,
-    color: '#e8162a',
+    color: '#C8233C',
     textAlign: 'center',
     marginBottom: 40,
   },
@@ -169,15 +186,15 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   input: {
-    backgroundColor: '#2a0a0a',
+    backgroundColor: '#ffffff',
     borderRadius: 50,
     paddingVertical: 16,
     paddingHorizontal: 20,
-    color: '#ffffff',
+    color: '#1a0000',
     fontSize: 14,
     fontFamily: 'DMSans_400Regular',
     borderWidth: 1,
-    borderColor: '#3a1010',
+    borderColor: '#e8e0d5',
   },
   passwordWrapper: {
     position: 'relative',
@@ -191,21 +208,18 @@ const styles = StyleSheet.create({
     right: 20,
     padding: 4,
   },
-  eyeIcon: {
-    fontSize: 18,
-  },
   inputError: {
-    borderColor: '#e8162a',
+    borderColor: '#C8233C',
   },
   errorText: {
-    color: '#e8162a',
+    color: '#C8233C',
     fontSize: 12,
     fontFamily: 'DMSans_400Regular',
     marginTop: 6,
     marginLeft: 16,
   },
   button: {
-    backgroundColor: '#c0182b',
+    backgroundColor: '#C8233C',
     borderRadius: 50,
     paddingVertical: 18,
     alignItems: 'center',
@@ -219,14 +233,14 @@ const styles = StyleSheet.create({
   },
   forgotText: {
     fontFamily: 'DMSans_400Regular',
-    color: '#ffffff',
+    color: '#1a0000',
     fontSize: 14,
     textAlign: 'center',
-    opacity: 0.85,
+    opacity: 0.6,
   },
   divider: {
     height: 1,
-    backgroundColor: '#3a1010',
+    backgroundColor: '#e8e0d5',
     marginVertical: 28,
   },
   googleButton: {
@@ -235,8 +249,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderRadius: 50,
     borderWidth: 1,
-    borderColor: '#3a1010',
-    backgroundColor: '#2a0a0a',
+    borderColor: '#e8e0d5',
+    backgroundColor: '#ffffff',
     paddingVertical: 16,
     gap: 10,
   },
@@ -247,7 +261,7 @@ const styles = StyleSheet.create({
   },
   googleText: {
     fontFamily: 'DMSans_400Regular',
-    color: '#ffffff',
+    color: '#1a0000',
     fontSize: 15,
   },
 });

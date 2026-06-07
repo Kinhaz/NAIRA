@@ -6,6 +6,5 @@ export type RootStackParamList = {
   Profile: undefined;
   Quiz: undefined;
   Loading: undefined;
-  Home: undefined;
   Donate: undefined;
 };

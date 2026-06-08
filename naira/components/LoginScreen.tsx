@@ -68,7 +68,7 @@ export default function LoginScreen({ navigation }: Props) {
     }
 
     if (valid) {
-      console.log('Login com:', email, password);
+      navigation.navigate('Home');
     }
   };
 

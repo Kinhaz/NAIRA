@@ -69,7 +69,7 @@ export default function HomeScreen({ navigation }: { navigation?: any }) {
           </View>
 
           <View style={styles.benefitsBottom}>
-            <Text style={styles.benefitsCardLabel}>NAIRA</Text>
+            <Text style={styles.benefitsCardLabel}>NAIRA ID</Text>
           </View>
         </TouchableOpacity>
 

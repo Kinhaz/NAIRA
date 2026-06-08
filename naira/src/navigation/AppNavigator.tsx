@@ -10,6 +10,7 @@ import DonateScreen from '../../components/DonateScreen';
 import HomeScreen from '../../components/HomeScreen';
 import LoadingScreen from '../../components/LoadingScreen';
 import QuizScreen from '../../components/QuizScreen';
+import BeneficiosScreen from '../../components/BeneficiosScreen';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
@@ -27,6 +28,7 @@ export default function AppNavigator() {
       <Stack.Screen name="Home" component={HomeScreen} />
       <Stack.Screen name="Loading" component={LoadingScreen} />
       <Stack.Screen name="Quiz" component={QuizScreen} />
+      <Stack.Screen name="Beneficios" component={BeneficiosScreen} />
     </Stack.Navigator>
   );
 }

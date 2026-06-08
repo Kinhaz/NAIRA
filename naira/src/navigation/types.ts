@@ -7,4 +7,5 @@ export type RootStackParamList = {
   Quiz: undefined;
   Loading: undefined;
   Donate: undefined;
+  Beneficios: undefined;
 };
